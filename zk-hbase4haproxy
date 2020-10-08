@@ -1,0 +1,15 @@
+[Unit]
+Description=zk-hbase4haproxy agent
+Documentation=https://github.com/Click2Buy/zk-hbase4haproxy
+After=network.target
+
+[Service]
+Type=simple
+User=node
+ExecStart=/usr/bin/java -server -Xss256k -classpath ./target/ZkHbase4Haproxy-1.0.jar com.marketconnect.zkhbase4haproxy.Agent --zkQuorum=127.0.0.1:2181/hbase --hbaseRsGroup=oltp --manualRecovery
+Restart=always
+#on-failure
+
+[Install]
+WantedBy=multi-user.target
+
