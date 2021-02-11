@@ -49,6 +49,7 @@ Option manualRecovery is used in case you dont want the agent to send back UP af
 * Fix table `$ sudo -u hbase hbase hbck -fix <Table_Name>`
 * Balance table `$ echo balancer | hbase shell`
 * Table major compaction `$ echo "major_compact <Table_Name>" | hbase shell`
+* Restart hbase master
 * Sometimes it could be a hdfs problem
 
 When solution is fixed, to go back to UP status, you need to restart the agent.
