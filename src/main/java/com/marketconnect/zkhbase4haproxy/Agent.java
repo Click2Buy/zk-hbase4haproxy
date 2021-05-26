@@ -178,12 +178,19 @@ public class Agent implements Watcher, Runnable {
         if (event.getType() == Event.EventType.None) {
             // We are are being told that the state of the
             // connection has changed
+            log.debug("Connection has changed. New state is " + event.getState());
             switch (event.getState()) {
             case SyncConnected:
                 // In this particular example we don't need to do anything
                 // here - watches are automatically re-registered with 
                 // server and any watches triggered while the client was 
                 // disconnected will be delivered (in order of course)
+                if (!(manualRecovery && "DOWN".equals(rsState))) {
+                    rsState = "UP";
+                }
+                break;
+            case Disconnected:
+                rsState = "DOWN";
                 break;
             case Expired:
                 // It's all over
