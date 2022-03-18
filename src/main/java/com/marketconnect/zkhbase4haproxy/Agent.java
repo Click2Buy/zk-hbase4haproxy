@@ -30,6 +30,15 @@ import org.apache.zookeeper.data.Stat;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
 import org.apache.hadoop.hbase.protobuf.generated.RSGroupProtos;
 
+/**
+ * Main Class of the tool
+ * Commons mvn tasks are
+ * mvn clean ; mvn package ; mvn site ; mvn javadoc:javadoc ; mvn spotbugs:check ; mvn spotbugs:gui
+ * Launch it on command line
+ * java -server -Xss256k -classpath ./target/ZkHbase4Haproxy-1.0.jar com.marketconnect.zkhbase4haproxy.Agent --zkQuorum=127.0.0.1:2181/hbase --hbaseRsGroup=oltp --manualRecovery
+ *
+ * The agent checks HBase regionservers status through zookeeper and return UP or DOWN on the listenning port
+ */
 public class Agent implements Watcher, Runnable {
 
     private static final byte [] PB_MAGIC = new byte [] {'P', 'B', 'U', 'F'};
@@ -44,6 +53,11 @@ public class Agent implements Watcher, Runnable {
     private ZooKeeper zkClient;
     private ServerSocket serverSocket;
 
+    /**
+     * The main java function called by java right after the launch
+     *
+     * @param args is the args send by java
+     */
     public static void main(String[] args) {
         ArgumentParser parser = ArgumentParsers.newFor("Agent").build()
             .defaultHelp(true)
@@ -79,7 +93,13 @@ public class Agent implements Watcher, Runnable {
         }
     }
 
-    // Find key byte array in buffer byte array
+    /**
+     * Find key byte array in buffer byte array
+     *
+     * @param buffer array byte to search into
+     * @param key array byte to search
+     * @return index of the key in buffer
+     */
     public int find(byte[] buffer, byte[] key) {
         for (int i = 0; i <= buffer.length - key.length; i++) {
             int j = 0;
@@ -93,6 +113,12 @@ public class Agent implements Watcher, Runnable {
         return -1;
     }
 
+    /**
+     * Parse a data byte array to return HBase RsGroup
+     *
+     * @param data array byte to parse
+     * @return HBase RsGroup
+     */
     private RSGroupProtos.RSGroupInfo listRs(byte[] data)
         throws InvalidProtocolBufferException, UnsupportedEncodingException {
         int start = find(data, PB_MAGIC) + 4;
@@ -100,6 +126,11 @@ public class Agent implements Watcher, Runnable {
         return RSGroupProtos.RSGroupInfo.parseFrom(subdata);
     }
 
+    /**
+     * Update internal rsStatus with state retreive from Zookeeper
+     *
+     * @param rsChildren list retreive from Zookeeper
+     */
     private void updateRsState(List<String> rsChildren) 
     {
         if (manualRecovery && "DOWN".equals(rsState)) {
@@ -143,6 +174,14 @@ public class Agent implements Watcher, Runnable {
         log.error("All region servers are down.");
     }
 
+    /**
+     * Construct object
+     *
+     * @param zkQuorum is the zookeeper quorum to monitor
+     * @param hbaseRsGroup is the rs group to monitor
+     * @param manualRecovery to do an automatic or manual recovery after a disaster
+     * @param port to listen haproxy on
+     */
     public Agent(String zkQuorum, String hbaseRsGroup, boolean manualRecovery, int port)
         throws KeeperException, IOException, InterruptedException {
         zkClient = new ZooKeeper(zkQuorum, 5000, this);
@@ -173,6 +212,11 @@ public class Agent implements Watcher, Runnable {
         serverSocket = new ServerSocket(port);
     }
 
+    /**
+     * Callback method to be called after receiving an event from zookeeper
+     *
+     * @param event send back by zookeeper
+     */
     public void process(WatchedEvent event) {
         String path = event.getPath();
         if (event.getType() == Event.EventType.None) {
@@ -249,6 +293,9 @@ public class Agent implements Watcher, Runnable {
         }
     }
 
+    /**
+     * Listen on a port and send HBase state UP or DOWN
+     */
     public void run() {
         while (!dead) {
             try {
